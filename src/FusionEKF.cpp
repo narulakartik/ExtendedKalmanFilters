@@ -47,6 +47,7 @@ FusionEKF::FusionEKF() {
   		  0,1,0,1,
   		 0,0,1000,0,
   		0,0,0,1000;
+   Hj_=tools.CalculateJacobian(ekf_.x_);
   
     	
   //P<<1,0,0,0,
@@ -71,8 +72,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   /**
    * Initialization
    */
-  long previous_timestamp_;
-  long new_timestamp_;
+  
  
   if (!is_initialized_) {
     /**
@@ -114,10 +114,9 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
     is_initialized_ = true;
     return;
   }
-   new_timestamp_=measurement_pack.timestamp_;
-  /**
-   * Prediction
-   */
+   
+   // Prediction
+   
 
   /**
    * TODO: Update the state transition matrix F according to the new elapsed time.
@@ -128,32 +127,31 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   float noise_ax=9;
   float noise_ay=9;
   
-  float dt=(new_timestamp_-previous_timestamp_)/1000000;
-  MatrixXd f;
-  f=MatrixXd(4,4);
-  f<<1,0,dt,0,
+  float dt = (measurement_pack.timestamp_ - previous_timestamp_) / 1000000.0;	
+previous_timestamp_ = measurement_pack.timestamp_;
+  
+  
+  ekf_.F_<<1,0,dt,0,
   0,1,0,dt;
   0,0,1,0;
   0,0,0,1;
-  ekf_.F_=f;
+  
   //ekf_.F_(0,2)=dt;
   //ekf_.F_(1,3)=dt;
   float dt_2 = dt * dt;
   float dt_3 = dt_2 * dt;
   float dt_4 = dt_3 * dt;
   MatrixXd q;
-  q = MatrixXd(4, 4);
-  q <<  dt_4/4*noise_ax, 0, dt_3/2*noise_ax, 0,
+ 
+  ekf_.Q_ <<  dt_4/4*noise_ax, 0, dt_3/2*noise_ax, 0,
          0, dt_4/4*noise_ay, 0, dt_3/2*noise_ay,
          dt_3/2*noise_ax, 0, dt_2*noise_ax, 0,
          0, dt_3/2*noise_ay, 0, dt_2*noise_ay;
   ekf_.Predict();
-  MatrixXd h_radar;
-  h_radar=tools.CalculateJacobian(ekf_.x_);
-  MatrixXd h_laser;
-  h_laser=MatrixXd(2,4);
+ 
+ 
   
-  h_laser<<1,0,0,0,0,1,0,0;
+  
   /**
    * Update
    */
@@ -167,7 +165,7 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
     // TODO: Radar updates
     
-     ekf_.Init(ekf_.x_, ekf_.P_, f, h_radar, R_radar_, q);
+     ekf_.Init(ekf_.x_, ekf_.P_, ekf_.F_, Hj_, R_radar_, q);
     
     
     ekf_.UpdateEKF(measurement_pack.raw_measurements_);
@@ -175,12 +173,12 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
   } else {
     // TODO: Laser updates
     
-    ekf_.Init(ekf_.x_, ekf_.P_, f, h_laser, R_laser_, q);
+    ekf_.Init(ekf_.x_, ekf_.P_, ekf_.F_, H_laser_, R_laser_, q);
     
     ekf_.Update(measurement_pack.raw_measurements_);
     
   }
-  previous_timestamp_=new_timestamp_;
+  
   // print the output
   cout << "x_ = " << ekf_.x_ << endl;
   cout << "P_ = " << ekf_.P_ << endl;
