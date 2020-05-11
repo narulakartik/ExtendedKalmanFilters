@@ -98,9 +98,12 @@ void FusionEKF::ProcessMeasurement(const MeasurementPackage &measurement_pack) {
       //         and initialize state.
       float rho=measurement_pack.raw_measurements_[0];
       float phi=measurement_pack.raw_measurements_[1];
-    //  float rhodot=measurement_pack.raw_measurements_[2];
+      float rhodot=measurement_pack.raw_measurements_[2];
+      while (phi > M_PI)  phi -= 2.0 * M_PI;
+      while (phi < -M_PI) phi += 2.0 * M_PI;
       float x=rho*cos(phi);
       float y=rho*sin(phi);
+      
       ekf_.x_<<x,y,0,0;
     }
     else if (measurement_pack.sensor_type_ == MeasurementPackage::LASER) {
