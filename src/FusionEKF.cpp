@@ -179,7 +179,7 @@ previous_timestamp_ = measurement_pack.timestamp_;
 
   } else {
     // TODO: Laser updates
-    ekf_.H=MatrixXd(2,4);
+    ekf_.H_=MatrixXd(2,4);
     ekf_.H_=H_laser_;
     ekf_.R_=MatrixXd(2,2);
     ekf_.R_=R_laser_;
