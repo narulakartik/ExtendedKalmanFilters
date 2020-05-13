@@ -36,7 +36,7 @@ FusionEKF::FusionEKF() {
               0, 0.0009, 0,
               0, 0, 0.09;
   H_laser_<< 1,0,0,0,0,1,0,0;
-  
+ 
   ekf_.F_=MatrixXd(4,4);
   ekf_.F_<<1,0,1,0,
   		  0,1,0,1,
@@ -49,7 +49,7 @@ FusionEKF::FusionEKF() {
   		0,0,0,1000;
    ekf_.Q_=MatrixXd(4,4);
   
-    	
+   
   //P<<1,0,0,0,
   //	 0,1,0,0,
    //  0,0,1000,0,
@@ -168,6 +168,8 @@ previous_timestamp_ = measurement_pack.timestamp_;
   if (measurement_pack.sensor_type_ == MeasurementPackage::RADAR) {
     // TODO: Radar updates
      Hj_=tools.CalculateJacobian(ekf_.x_);
+    ekf_.H_=MatrixXd(3,4);
+    ekf_.R_=MatrixXd(3,3);
      ekf_.H_=Hj_;
     ekf_.R_=R_radar_;
      ekf_.Init(ekf_.x_, ekf_.P_, ekf_.F_, ekf_.H_, ekf_.R_, ekf_.Q_);
@@ -177,8 +179,11 @@ previous_timestamp_ = measurement_pack.timestamp_;
 
   } else {
     // TODO: Laser updates
+    ekf_.H=MatrixXd(2,4);
     ekf_.H_=H_laser_;
+    ekf_.R_=MatrixXd(2,2);
     ekf_.R_=R_laser_;
+    
     ekf_.Init(ekf_.x_, ekf_.P_, ekf_.F_, ekf_.H_, ekf_.R_, ekf_.Q_);
     
     ekf_.Update(measurement_pack.raw_measurements_);
